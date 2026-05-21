@@ -1,0 +1,49 @@
+name: docker-thanh
+
+services:
+  app:
+    container_name: docker-thanh-app
+    build:
+      context: ./
+      dockerfile: ./php/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ../backend:/var/www/html/app
+    networks:
+      - app_network
+
+  nginx:
+    image: nginx:1.23.1
+    container_name: docker-thanh-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - ./nginx/config/app.conf:/etc/nginx/conf.d/app.conf
+      - ./logs/nginx:/var/log/nginx
+      # - .docker/ssl:/etc/nginx/ssl:cached
+      - ../backend:/var/www/html/app
+    depends_on:
+      - app
+    networks:
+      - app_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: docker-thanh-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_pri
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - app_network
+
+networks:
+  app_network:
