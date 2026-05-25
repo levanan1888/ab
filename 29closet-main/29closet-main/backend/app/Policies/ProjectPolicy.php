@@ -14,30 +14,26 @@ class ProjectPolicy
 
     public function view(User $user, Project $project): bool
     {
-        if ($user->is_leader()) {
-            return true;
-        }
-
-        return $project->members()->where('users.id', $user->id)->exists();
+        return $project->isMember($user);
     }
 
     public function create(User $user): bool
     {
-        return $user->is_leader();
+        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 
     public function update(User $user, Project $project): bool
     {
-        return $user->is_leader() && $project->owner_id === $user->id;
+        return $project->isProjectLeader($user);
     }
 
     public function delete(User $user, Project $project): bool
     {
-        return $user->is_leader() && $project->owner_id === $user->id;
+        return $project->isProjectLeader($user);
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->is_leader();
+        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 }

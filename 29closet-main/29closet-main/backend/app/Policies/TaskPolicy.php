@@ -14,34 +14,30 @@ class TaskPolicy
 
     public function view(User $user, Task $task): bool
     {
-        if ($user->is_leader()) {
-            return true;
-        }
-
-        return $task->assignee_id === $user->id || $task->project->members()->where('users.id', $user->id)->exists();
+        return $task->project->isMember($user);
     }
 
     public function create(User $user): bool
     {
-        return $user->is_leader();
+        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 
     public function update(User $user, Task $task): bool
     {
-        if ($user->is_leader()) {
+        if ($task->project->isProjectLeader($user)) {
             return true;
         }
 
-        return $task->assignee_id === $user->id;
+        return $task->assignee_id === $user->id && $task->project->isMember($user);
     }
 
     public function delete(User $user, Task $task): bool
     {
-        return $user->is_leader();
+        return $task->project->isProjectLeader($user);
     }
 
     public function deleteAny(User $user): bool
     {
-        return $user->is_leader();
+        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 }

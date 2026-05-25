@@ -17,7 +17,8 @@ class EnsureMemberHasProject
             return $next($request);
         }
 
-        if ($user->role !== User::ROLE_MEMBER) {
+        // Leader (hoặc role khác) luôn được truy cập, chỉ chặn member chưa có nhóm.
+        if ($user->is_leader() || $user->role !== User::ROLE_MEMBER) {
             return $next($request);
         }
 

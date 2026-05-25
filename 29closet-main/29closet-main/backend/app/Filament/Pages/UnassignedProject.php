@@ -14,5 +14,5 @@ class UnassignedProject extends Page
 
     protected static ?string $slug = 'chua-duoc-phan-vao-du-an';
 
-    protected static ?string $title = 'Bạn chưa được phân vào dự án';
+    protected static ?string $title = 'Bạn chưa được phân vào nhóm';
 }

@@ -31,14 +31,6 @@
             min-width: 150px;
             padding: 4px 8px;
         }
-
-        .redmine-actions {
-            color: #1683d8;
-            display: flex;
-            gap: 14px;
-            margin: 14px 0 18px;
-        }
-
         .redmine-grid {
             column-count: 3;
             column-gap: 12px;
@@ -97,13 +89,13 @@
             font-size: 13px;
         }
 
-        @media (max-width: 1100px) {
+        @@media (max-width: 1100px) {
             .redmine-grid {
                 column-count: 2;
             }
         }
 
-        @media (max-width: 700px) {
+        @@media (max-width: 700px) {
             .redmine-grid {
                 column-count: 1;
             }
@@ -122,13 +114,6 @@
                 </select>
             </div>
         </div>
-
-        <div class="redmine-actions">
-            <span>✓ Áp dụng</span>
-            <span>↻ Xóa</span>
-            <span>💾 Lưu truy vấn</span>
-        </div>
-
         <div class="redmine-grid">
             @forelse ($this->getProjectCards() as $project)
                 <section class="redmine-project-card">
@@ -166,7 +151,7 @@
                 </section>
             @empty
                 <section class="redmine-project-card">
-                    <span class="redmine-empty">Không có dự án phù hợp.</span>
+                    <span class="redmine-empty">Không có nhóm phù hợp.</span>
                 </section>
             @endforelse
         </div>

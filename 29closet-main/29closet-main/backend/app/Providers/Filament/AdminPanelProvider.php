@@ -4,6 +4,11 @@ namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
 use App\Filament\Auth\Register;
+use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\MyPage;
+use App\Filament\Pages\UserProfilePage;
+use App\Filament\Pages\TeamMembersPage;
+use App\Filament\Pages\TaskPriorityBoard;
 use App\Filament\Widgets\TaskStatsOverview;
 use App\Filament\Widgets\ProjectProgressTable;
 use App\Http\Middleware\EnsureMemberHasProject;
@@ -15,6 +20,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -31,10 +37,11 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Quản lý dự án')
+            ->brandName('Quản lý nhóm làm việc')
             ->brandLogo(asset('img/avatThanh.png'))
             ->brandLogoHeight('4rem')
             ->darkMode(false)
+            ->maxContentWidth(MaxWidth::Full)
             ->login(Login::class)
             ->registration(Register::class)
             ->profile()
@@ -44,7 +51,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                Dashboard::class,
+                MyPage::class,
+                TaskPriorityBoard::class,
+                TeamMembersPage::class,
+                UserProfilePage::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([

@@ -22,13 +22,13 @@ class ListProjects extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()->label('Tạo dự án'),
+            Actions\CreateAction::make()->label('Tạo nhóm'),
         ];
     }
 
     public function getTitle(): string
     {
-        return 'Dự án';
+        return 'Nhóm làm việc';
     }
 
     public function getProjectCards(): Collection
@@ -39,10 +39,10 @@ class ListProjects extends ListRecords
                 'members',
                 'tasks',
                 'tasks as open_tasks_count' => function ($query): void {
-                    $query->whereIn('status', [Task::STATUS_TODO, Task::STATUS_IN_PROGRESS]);
+                    $query->whereIn('status', [Task::STATUS_NEW, Task::STATUS_PENDING, Task::STATUS_IN_PROGRESS, Task::STATUS_CODE_FINISH, Task::STATUS_CODE_REVIEW, Task::STATUS_REVIEW_DONE, Task::STATUS_TEST_READY, Task::STATUS_TESTING, Task::STATUS_REOPEN]);
                 },
                 'tasks as closed_tasks_count' => function ($query): void {
-                    $query->where('status', Task::STATUS_DONE);
+                    $query->where('status', Task::STATUS_CLOSED);
                 },
             ])
             ->with(['tasks' => function ($query): void {

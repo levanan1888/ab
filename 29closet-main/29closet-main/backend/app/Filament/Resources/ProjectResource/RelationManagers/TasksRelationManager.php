@@ -41,12 +41,21 @@ class TasksRelationManager extends RelationManager
             Forms\Components\Select::make('status')
                 ->label('Trạng thái')
                 ->options([
-                    Task::STATUS_TODO => 'Chưa làm',
-                    Task::STATUS_IN_PROGRESS => 'Đang làm',
-                    Task::STATUS_DONE => 'Hoàn thành',
+                    Task::STATUS_NEW => 'New',
+                Task::STATUS_PENDING => 'Pending',
+                Task::STATUS_IN_PROGRESS => 'In Progress',
+                Task::STATUS_CODE_FINISH => 'Code Finish',
+                Task::STATUS_CODE_REVIEW => 'Code Review',
+                Task::STATUS_REVIEW_DONE => 'Review Done',
+                Task::STATUS_TEST_READY => 'Test Ready',
+                Task::STATUS_TESTING => 'Testing',
+                Task::STATUS_TEST_DONE => 'Test Done',
+                Task::STATUS_REJECTED => 'Rejected',
+                Task::STATUS_REOPEN => 'Reopen',
+                Task::STATUS_CLOSED => 'Closed',
                 ])
                 ->required()
-                ->default(Task::STATUS_TODO),
+                ->default(Task::STATUS_NEW),
             Forms\Components\Select::make('priority')
                 ->label('Mức ưu tiên')
                 ->options([
@@ -71,9 +80,13 @@ class TasksRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('assignee.name')->label('Người thực hiện'),
                 Tables\Columns\BadgeColumn::make('status')->label('Trạng thái')->colors([
-                    'gray' => Task::STATUS_TODO,
+                    'gray' => Task::STATUS_NEW,
+                    'secondary' => Task::STATUS_PENDING,
                     'warning' => Task::STATUS_IN_PROGRESS,
-                    'success' => Task::STATUS_DONE,
+                    'info' => Task::STATUS_CODE_FINISH,
+                    'primary' => Task::STATUS_CODE_REVIEW,
+                    'success' => [Task::STATUS_REVIEW_DONE, Task::STATUS_TEST_READY, Task::STATUS_TESTING, Task::STATUS_TEST_DONE, Task::STATUS_CLOSED],
+                    'danger' => [Task::STATUS_REJECTED, Task::STATUS_REOPEN],
                 ]),
                 Tables\Columns\BadgeColumn::make('priority')->label('Mức ưu tiên')->colors([
                     'success' => Task::PRIORITY_LOW,
@@ -84,9 +97,18 @@ class TasksRelationManager extends RelationManager
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->label('Trạng thái')->options([
-                    Task::STATUS_TODO => 'Chưa làm',
-                    Task::STATUS_IN_PROGRESS => 'Đang làm',
-                    Task::STATUS_DONE => 'Hoàn thành',
+                    Task::STATUS_NEW => 'New',
+                Task::STATUS_PENDING => 'Pending',
+                Task::STATUS_IN_PROGRESS => 'In Progress',
+                Task::STATUS_CODE_FINISH => 'Code Finish',
+                Task::STATUS_CODE_REVIEW => 'Code Review',
+                Task::STATUS_REVIEW_DONE => 'Review Done',
+                Task::STATUS_TEST_READY => 'Test Ready',
+                Task::STATUS_TESTING => 'Testing',
+                Task::STATUS_TEST_DONE => 'Test Done',
+                Task::STATUS_REJECTED => 'Rejected',
+                Task::STATUS_REOPEN => 'Reopen',
+                Task::STATUS_CLOSED => 'Closed',
                 ]),
                 Tables\Filters\SelectFilter::make('assignee_id')
                     ->label('Người thực hiện')
@@ -98,7 +120,7 @@ class TasksRelationManager extends RelationManager
                     ->visible(fn (): bool => Auth::user()?->role === User::ROLE_LEADER)
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['creator_id'] = Auth::id();
-                        $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_DONE ? now() : null;
+                        $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
 
                         return $data;
                     })
@@ -109,7 +131,7 @@ class TasksRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
-                        $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_DONE ? now() : null;
+                        $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
 
                         return $data;
                     })

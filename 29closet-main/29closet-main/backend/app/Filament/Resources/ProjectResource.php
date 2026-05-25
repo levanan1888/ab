@@ -21,14 +21,14 @@ class ProjectResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
-    protected static ?string $navigationLabel = 'Dự án';
+    protected static ?string $navigationLabel = 'Nhóm làm việc';
 
     public static function form(Form $form): Form
     {
         $is_member = Auth::user()?->role === User::ROLE_MEMBER;
 
         return $form->schema([
-            Forms\Components\TextInput::make('name')->label('Tên dự án')->required()->maxLength(255)->disabled($is_member),
+            Forms\Components\TextInput::make('name')->label('Tên nhóm')->required()->maxLength(255)->disabled($is_member),
             Forms\Components\Textarea::make('description')->label('Mô tả')->rows(3)->disabled($is_member),
             Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true)->disabled($is_member),
         ]);
@@ -38,8 +38,8 @@ class ProjectResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')->label('Tên dự án')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('owner.name')->label('Quản lý dự án')->sortable(),
+                Tables\Columns\TextColumn::make('name')->label('Tên nhóm')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('owner.name')->label('Quản lý nhóm làm việc')->sortable(),
                 Tables\Columns\IconColumn::make('is_active')->label('Hoạt động')->boolean(),
                 Tables\Columns\TextColumn::make('members_count')->counts('members')->label('Số thành viên'),
                 Tables\Columns\TextColumn::make('tasks_count')->counts('tasks')->label('Số công việc'),
@@ -102,6 +102,14 @@ class ProjectResource extends Resource
             'index' => Pages\ListProjects::route('/'),
             'create' => Pages\CreateProject::route('/create'),
             'edit' => Pages\EditProject::route('/{record}/edit'),
+            'activity' => Pages\ActivityProject::route('/{record}/activity'),
+            'issues' => Pages\IssuesProject::route('/{record}/issues'),
+            'dashboard' => Pages\DashboardProject::route('/{record}/dashboard'),
+            'spent-time' => Pages\SpentTimeProject::route('/{record}/spent-time'),
+            'gantt' => Pages\GanttProject::route('/{record}/gantt'),
+            'wiki' => Pages\WikiProject::route('/{record}/wiki'),
+            'files' => Pages\FilesProject::route('/{record}/files'),
+            'settings' => Pages\SettingsProject::route('/{record}/settings'),
         ];
     }
 }

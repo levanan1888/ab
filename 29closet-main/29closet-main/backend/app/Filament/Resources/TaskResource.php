@@ -30,7 +30,7 @@ class TaskResource extends Resource
 
         return $form->schema([
             Forms\Components\Select::make('project_id')
-                ->label('Dự án')
+                ->label('Nhóm làm việc')
                 ->options(Project::query()->pluck('name', 'id')->toArray())
                 ->searchable()
                 ->required()
@@ -61,10 +61,19 @@ class TaskResource extends Resource
                 ->searchable()
                 ->disabled($is_member),
             Forms\Components\Select::make('status')->label('Trạng thái')->options([
-                Task::STATUS_TODO => 'Chưa làm',
-                Task::STATUS_IN_PROGRESS => 'Đang làm',
-                Task::STATUS_DONE => 'Hoàn thành',
-            ])->required()->default(Task::STATUS_TODO),
+                Task::STATUS_NEW => 'New',
+                Task::STATUS_PENDING => 'Pending',
+                Task::STATUS_IN_PROGRESS => 'In Progress',
+                Task::STATUS_CODE_FINISH => 'Code Finish',
+                Task::STATUS_CODE_REVIEW => 'Code Review',
+                Task::STATUS_REVIEW_DONE => 'Review Done',
+                Task::STATUS_TEST_READY => 'Test Ready',
+                Task::STATUS_TESTING => 'Testing',
+                Task::STATUS_TEST_DONE => 'Test Done',
+                Task::STATUS_REJECTED => 'Rejected',
+                Task::STATUS_REOPEN => 'Reopen',
+                Task::STATUS_CLOSED => 'Closed',
+            ])->required()->default(Task::STATUS_NEW),
             Forms\Components\Select::make('priority')->label('Mức ưu tiên')->options([
                 Task::PRIORITY_LOW => 'Thấp',
                 Task::PRIORITY_MEDIUM => 'Trung bình',
@@ -79,12 +88,16 @@ class TaskResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('project.name')->label('Dự án')->sortable(),
+                Tables\Columns\TextColumn::make('project.name')->label('Nhóm làm việc')->sortable(),
                 Tables\Columns\TextColumn::make('assignee.name')->label('Người thực hiện'),
                 Tables\Columns\BadgeColumn::make('status')->label('Trạng thái')->colors([
-                    'gray' => Task::STATUS_TODO,
+                    'gray' => Task::STATUS_NEW,
+                    'secondary' => Task::STATUS_PENDING,
                     'warning' => Task::STATUS_IN_PROGRESS,
-                    'success' => Task::STATUS_DONE,
+                    'info' => Task::STATUS_CODE_FINISH,
+                    'primary' => Task::STATUS_CODE_REVIEW,
+                    'success' => [Task::STATUS_REVIEW_DONE, Task::STATUS_TEST_READY, Task::STATUS_TESTING, Task::STATUS_TEST_DONE, Task::STATUS_CLOSED],
+                    'danger' => [Task::STATUS_REJECTED, Task::STATUS_REOPEN],
                 ]),
                 Tables\Columns\BadgeColumn::make('priority')->label('Mức ưu tiên')->colors([
                     'success' => Task::PRIORITY_LOW,
@@ -94,11 +107,20 @@ class TaskResource extends Resource
                 Tables\Columns\TextColumn::make('deadline')->label('Hạn chót')->dateTime(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('project_id')->label('Dự án')->relationship('project', 'name'),
+                Tables\Filters\SelectFilter::make('project_id')->label('Nhóm làm việc')->relationship('project', 'name'),
                 Tables\Filters\SelectFilter::make('status')->label('Trạng thái')->options([
-                    Task::STATUS_TODO => 'Chưa làm',
-                    Task::STATUS_IN_PROGRESS => 'Đang làm',
-                    Task::STATUS_DONE => 'Hoàn thành',
+                    Task::STATUS_NEW => 'New',
+                Task::STATUS_PENDING => 'Pending',
+                Task::STATUS_IN_PROGRESS => 'In Progress',
+                Task::STATUS_CODE_FINISH => 'Code Finish',
+                Task::STATUS_CODE_REVIEW => 'Code Review',
+                Task::STATUS_REVIEW_DONE => 'Review Done',
+                Task::STATUS_TEST_READY => 'Test Ready',
+                Task::STATUS_TESTING => 'Testing',
+                Task::STATUS_TEST_DONE => 'Test Done',
+                Task::STATUS_REJECTED => 'Rejected',
+                Task::STATUS_REOPEN => 'Reopen',
+                Task::STATUS_CLOSED => 'Closed',
                 ]),
                 Tables\Filters\SelectFilter::make('assignee_id')->label('Người thực hiện')->relationship('assignee', 'name'),
             ])
@@ -118,11 +140,8 @@ class TaskResource extends Resource
         $user = Auth::user();
 
         if ($user !== null && $user->role === User::ROLE_MEMBER) {
-            return $query->where(function (Builder $builder) use ($user): void {
-                $builder->where('assignee_id', $user->id)
-                    ->orWhereHas('project.members', function (Builder $member_builder) use ($user): void {
-                        $member_builder->where('users.id', $user->id);
-                    });
+            return $query->whereHas('project.members', function (Builder $builder) use ($user): void {
+                $builder->where('users.id', $user->id);
             });
         }
 

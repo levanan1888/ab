@@ -11,6 +11,42 @@
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
+        .redmine-project-name {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 10px;
+        }
+
+        .redmine-tabs {
+            align-items: center;
+            background: #3b4650;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+            margin-bottom: 14px;
+            padding: 0 10px;
+        }
+
+        .redmine-tab {
+            color: #cfd6de;
+            display: inline-block;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px 10px;
+            text-decoration: none;
+        }
+
+        .redmine-tab:hover {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .redmine-tab.active {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
         .redmine-overview-grid {
             display: grid;
             gap: 10px;
@@ -89,7 +125,7 @@
             margin-bottom: 14px;
         }
 
-        @media (max-width: 900px) {
+        @@media (max-width: 900px) {
             .redmine-overview-grid {
                 grid-template-columns: 1fr;
             }
@@ -97,10 +133,32 @@
     </style>
 
     <div class="redmine-overview">
-        @if (!empty($record->description))
-            <p class="redmine-description"><?php echo e($record->description); ?></p>
-        @endif
+        <?php $tabs = $this->getProjectTabUrls(); ?>
+        <?php $activeTab = request()->query('tab') === 'activity' ? 'activity' : 'overview'; ?>
+        <?php echo $__env->make('filament.resources.project-resource.pages.tabs._tabs', ['tabs' => $tabs, 'activeTab' => $activeTab], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
+        <?php if (!empty($record->description)): ?>
+            <p class="redmine-description"><?php echo e($record->description); ?></p>
+        <?php endif; ?>
+
+        <?php if ($activeTab === 'activity'): ?>
+            <section class="redmine-box">
+                <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Activity</h2>
+                @forelse ($this->getActivities() as $item)
+                    <article style="border-top:1px solid #ececec;padding:10px 0;">
+                        <div style="font-size:14px;">
+                            <strong>{{ $item->causer->name ?? 'System' }}</strong>
+                            đã <strong>{{ $item->action }}</strong> task #{{ $item->subject_id }}
+                        </div>
+                        <div style="font-size:12px;color:#6b7280;">
+                            {{ $item->created_at?->format('d/m/Y H:i') }}
+                        </div>
+                    </article>
+                @empty
+                    <p>Chưa có hoạt động.</p>
+                @endforelse
+            </section>
+        <?php else: ?>
         <div class="redmine-overview-grid">
             <section class="redmine-box">
                 <h2 class="redmine-box-title">📊 Theo dõi công việc</h2>
@@ -117,15 +175,27 @@
                         @foreach ($this->getOverviewRows() as $label => $counts)
                             <tr>
                                 <td><?php echo e($label); ?></td>
-                                <td><?php echo e($counts['open']); ?></td>
-                                <td><?php echo e($counts['closed']); ?></td>
-                                <td><?php echo e($counts['total']); ?></td>
+                                <td>
+                                    <a class="redmine-link" href="<?php echo e($this->getTaskListUrl($counts['priority'], 'todo')); ?>">
+                                        <?php echo e($counts['open']); ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a class="redmine-link" href="<?php echo e($this->getTaskListUrl($counts['priority'], 'done')); ?>">
+                                        <?php echo e($counts['closed']); ?>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a class="redmine-link" href="<?php echo e($this->getTaskListUrl($counts['priority'])); ?>">
+                                        <?php echo e($counts['total']); ?>
+                                    </a>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
                 <p class="mt-3 text-sm">
-                    <a class="redmine-link" href="<?php echo e(\App\Filament\Resources\TaskResource::getUrl('index', ['tableFilters' => ['project_id' => ['value' => $record->id]]])); ?>">Xem tất cả công việc</a>
+                    <a class="redmine-link" href="<?php echo e($this->getTaskListUrl()); ?>">Xem tất cả công việc</a>
                 </p>
             </section>
 
@@ -157,6 +227,7 @@
                 </section>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     @capture($form)

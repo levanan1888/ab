@@ -5,11 +5,13 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TaskCommentResource\Pages;
 use App\Models\Task;
 use App\Models\TaskComment;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class TaskCommentResource extends Resource
 {
@@ -24,7 +26,24 @@ class TaskCommentResource extends Resource
         return $form->schema([
             Forms\Components\Select::make('task_id')
                 ->label('Công việc')
-                ->options(Task::query()->pluck('title', 'id')->toArray())
+                ->options(function (): array {
+                    $user = auth()->user();
+
+                    if ($user === null) {
+                        return [];
+                    }
+
+                    if ($user->role === User::ROLE_LEADER) {
+                        return Task::query()->pluck('title', 'id')->toArray();
+                    }
+
+                    return Task::query()
+                        ->whereHas('project.members', function (Builder $query) use ($user): void {
+                            $query->where('users.id', $user->id);
+                        })
+                        ->pluck('title', 'id')
+                        ->toArray();
+                })
                 ->required()
                 ->searchable(),
             Forms\Components\Textarea::make('content')->label('Nội dung')->required()->rows(4),
@@ -49,6 +68,20 @@ class TaskCommentResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user !== null && $user->role === User::ROLE_MEMBER) {
+            return $query->whereHas('task.project.members', function (Builder $builder) use ($user): void {
+                $builder->where('users.id', $user->id);
+            });
+        }
+
+        return $query;
     }
 
 

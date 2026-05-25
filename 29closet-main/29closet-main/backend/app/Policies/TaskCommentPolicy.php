@@ -14,11 +14,7 @@ class TaskCommentPolicy
 
     public function view(User $user, TaskComment $task_comment): bool
     {
-        if ($user->is_leader()) {
-            return true;
-        }
-
-        return $task_comment->task->project->members()->where('users.id', $user->id)->exists();
+        return $task_comment->task->project->isMember($user);
     }
 
     public function create(User $user): bool
@@ -28,12 +24,12 @@ class TaskCommentPolicy
 
     public function update(User $user, TaskComment $task_comment): bool
     {
-        return $user->is_leader() || $task_comment->user_id === $user->id;
+        return $task_comment->task->project->isProjectLeader($user) || $task_comment->user_id === $user->id;
     }
 
     public function delete(User $user, TaskComment $task_comment): bool
     {
-        return $user->is_leader() || $task_comment->user_id === $user->id;
+        return $task_comment->task->project->isProjectLeader($user) || $task_comment->user_id === $user->id;
     }
 
     public function deleteAny(User $user): bool

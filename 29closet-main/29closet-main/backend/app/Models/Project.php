@@ -39,4 +39,17 @@ class Project extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    public function isMember(User $user): bool
+    {
+        return $this->members()->where('users.id', $user->id)->exists();
+    }
+
+    public function isProjectLeader(User $user): bool
+    {
+        return $this->members()
+            ->where('users.id', $user->id)
+            ->wherePivot('role_in_project', User::ROLE_LEADER)
+            ->exists();
+    }
 }
