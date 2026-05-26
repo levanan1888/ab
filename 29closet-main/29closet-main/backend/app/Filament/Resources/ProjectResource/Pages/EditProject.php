@@ -105,8 +105,8 @@ class EditProject extends EditRecord
             'overview' => static::getResource()::getUrl('edit', ['record' => $this->record]),
             'activity' => static::getResource()::getUrl('edit', ['record' => $this->record, 'tab' => 'activity']),
             'issues' => TaskResource::getUrl('index', ['tableFilters' => $task_filters]),
-            'dashboard' => TaskKanbanBoard::getUrl(['project_id' => $this->record->id]),
-            'gantt' => static::getResource()::getUrl('gantt', ['record' => $this->record]),
+            'dashboard' => static::getResource()::getUrl('edit', ['record' => $this->record, 'tab' => 'dashboard']),
+            'gantt' => TaskKanbanBoard::getUrl(['project_id' => $this->record->id]),
         ];
     }
 

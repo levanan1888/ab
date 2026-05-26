@@ -30,8 +30,8 @@ abstract class ProjectTabPage extends Page
             'overview' => static::getResource()::getUrl('edit', ['record' => $this->record]),
             'activity' => static::getResource()::getUrl('activity', ['record' => $this->record]),
             'issues' => TaskResource::getUrl('index', ['tableFilters' => $taskFilters]),
-            'dashboard' => TaskKanbanBoard::getUrl(['project_id' => $this->record->id]),
-            'gantt' => static::getResource()::getUrl('gantt', ['record' => $this->record]),
+            'dashboard' => static::getResource()::getUrl('dashboard', ['record' => $this->record]),
+            'gantt' => TaskKanbanBoard::getUrl(['project_id' => $this->record->id]),
         ];
     }
 }
