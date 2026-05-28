@@ -28,7 +28,8 @@ class TaskPolicy
             return true;
         }
 
-        return $task->assignee_id === $user->id && $task->project->isMember($user);
+        return $task->project->isMember($user)
+            && ($task->assignee_id === $user->id || $task->assignees()->where('users.id', $user->id)->exists());
     }
 
     public function delete(User $user, Task $task): bool

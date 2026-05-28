@@ -37,6 +37,7 @@ class TaskResource extends Resource
                 ->live()
                 ->afterStateUpdated(function (Set $set): void {
                     $set('assignee_id', null);
+                    $set('assignee_ids', []);
                 })
                 ->disabled($is_member),
             Forms\Components\TextInput::make('title')->label('Tiêu đề')->required()->maxLength(255)->disabled($is_member),
@@ -57,6 +58,19 @@ class TaskResource extends Resource
                     }
 
                     return $project->members()->pluck('users.name', 'users.id')->toArray();
+                })
+                ->searchable()
+                ->disabled($is_member),
+            Forms\Components\Select::make('assignee_ids')
+                ->label('Thành viên tham gia')
+                ->multiple()
+                ->options(function (Get $get): array {
+                    $project_id = $get('project_id');
+                    if (empty($project_id)) {
+                        return [];
+                    }
+                    $project = Project::query()->find($project_id);
+                    return $project?->members()->pluck('users.name', 'users.id')->toArray() ?? [];
                 })
                 ->searchable()
                 ->disabled($is_member),
@@ -89,7 +103,8 @@ class TaskResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('project.name')->label('Nhóm làm việc')->sortable(),
-                Tables\Columns\TextColumn::make('assignee.name')->label('Người thực hiện'),
+                Tables\Columns\TextColumn::make('assignee.name')->label('Người thực hiện chính'),
+                Tables\Columns\TextColumn::make('assignees.name')->label('Thành viên tham gia')->badge(),
                 Tables\Columns\BadgeColumn::make('status')->label('Trạng thái')->colors([
                     'gray' => Task::STATUS_NEW,
                     'secondary' => Task::STATUS_PENDING,

@@ -94,6 +94,9 @@
 	                @endforelse
             @elseif ($active_tab === 'notes')
                 <div style="margin-bottom: 10px;">
+                    @if($reply_to_comment_id)
+                        <div class="rm-meta" style="margin-bottom:6px;">Đang trả lời bình luận #{{ $reply_to_comment_id }}</div>
+                    @endif
                     <textarea class="rm-note-box" wire:model.defer="note_content" placeholder="Nhập ghi chú..."></textarea>
                 </div>
                 <button type="button" class="rm-btn" wire:click="addNote">Thêm ghi chú</button>
@@ -104,6 +107,14 @@
                             <div><strong>{{ $comment->user?->name ?? 'N/A' }}</strong></div>
                             <div>{{ $comment->content }}</div>
                             <div class="rm-meta">{{ $comment->created_at?->diffForHumans() }}</div>
+                            <button type="button" class="rm-action-link" wire:click="setReplyTo({{ $comment->id }})">Trả lời</button>
+                            @foreach($comment->replies as $reply)
+                                <div style="margin-left:18px;border-left:2px solid #e5e7eb;padding-left:10px;margin-top:8px;">
+                                    <div><strong>{{ $reply->user?->name ?? 'N/A' }}</strong></div>
+                                    <div>{{ $reply->content }}</div>
+                                    <div class="rm-meta">{{ $reply->created_at?->diffForHumans() }}</div>
+                                </div>
+                            @endforeach
                         </article>
 	                    @empty
 	                        <div class="rm-meta">Chưa có ghi chú.</div>

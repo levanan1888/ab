@@ -24,7 +24,7 @@ class TaskPriorityBoard extends Page
 
     public function getTasksByPriority(): array
     {
-        $query = Task::query()->with(['project:id,name', 'assignee:id,name']);
+        $query = Task::query()->with(['project:id,name', 'assignee:id,name', 'assignees:id,name']);
         $user = Filament::auth()->user();
 
         if ($user !== null && $user->role === User::ROLE_MEMBER) {
@@ -53,6 +53,14 @@ class TaskPriorityBoard extends Page
 
         if ($user !== null && $user->role === User::ROLE_MEMBER && ! $task->project->isMember($user)) {
             abort(403);
+        }
+
+        if ($user !== null && $user->role === User::ROLE_MEMBER) {
+            $isAssigned = $task->assignee_id === $user->id || $task->assignees()->where('users.id', $user->id)->exists();
+            if (! $isAssigned) {
+                Notification::make()->title('Bạn chỉ được kéo-thả task được giao cho mình')->danger()->send();
+                return;
+            }
         }
 
         $task->priority = $priority;

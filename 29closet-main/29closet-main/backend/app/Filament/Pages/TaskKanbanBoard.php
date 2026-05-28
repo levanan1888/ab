@@ -24,7 +24,7 @@ class TaskKanbanBoard extends KanbanBoard
     protected static ?string $navigationGroup = 'Công việc';
     protected static bool $shouldRegisterNavigation = false;
 
-    protected static string $recordTitleAttribute = 'title';
+    protected static string $recordTitleAttribute = 'kanban_title';
     #[Url]
     public ?int $project_id = null;
 
@@ -48,7 +48,7 @@ class TaskKanbanBoard extends KanbanBoard
 
     protected function records(): Collection
     {
-        $query = Task::query();
+        $query = Task::query()->with(['assignee:id,name', 'assignees:id,name']);
         $user = Filament::auth()->user();
 
         if ($this->project_id !== null) {
@@ -79,7 +79,7 @@ class TaskKanbanBoard extends KanbanBoard
                 'subject_id' => $task->id,
                 'action' => 'status_changed',
                 'causer_id' => $user->id,
-                'meta' => ['status' => $status],
+                'meta' => ['status' => $status, 'task_title' => $task->title],
             ]);
         }
     }
