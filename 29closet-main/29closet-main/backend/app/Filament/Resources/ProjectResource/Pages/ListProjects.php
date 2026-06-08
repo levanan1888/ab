@@ -23,7 +23,9 @@ class ListProjects extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()->label('Tạo nhóm'),
+            Actions\CreateAction::make()
+                ->label('Tạo nhóm')
+                ->visible(fn (): bool => Auth::user()?->is_admin() === true),
         ];
     }
 

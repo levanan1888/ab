@@ -19,7 +19,7 @@ class ProjectPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true);
+        return $user->role === User::ROLE_ADMIN;
     }
 
     public function update(User $user, Project $project): bool
