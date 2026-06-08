@@ -27,6 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Auth\Login::class)
+            ->registration(\App\Filament\Auth\Register::class)
             ->brandName(config('app.name'))
             ->brandLogo(function (): ?string {
                 $logoPath = SiteSetting::query()->value('logo_path');
