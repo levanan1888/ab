@@ -29,7 +29,7 @@ class UserProfilePage extends Page implements HasForms
 
     public function mount($user): void
     {
-        abort_unless(Auth::user()?->is_leader() === true, 403);
+        abort_unless(Auth::user()?->is_admin() === true, 403);
         $this->userRecord = User::query()->with('projects:id,name')->findOrFail($user);
 
         $this->form->fill([
@@ -54,6 +54,7 @@ class UserProfilePage extends Page implements HasForms
                 Select::make('role')
                     ->label('Vai trò hệ thống')
                     ->options([
+                        User::ROLE_ADMIN => 'Admin',
                         User::ROLE_LEADER => 'Leader',
                         User::ROLE_MEMBER => 'Member',
                     ])

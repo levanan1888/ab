@@ -26,7 +26,9 @@ class TaskResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $is_member = Auth::user()?->role === User::ROLE_MEMBER;
+        $user = Auth::user();
+        $is_member = $user?->role === User::ROLE_MEMBER;
+        $is_admin = $user?->role === User::ROLE_ADMIN;
 
         return $form->schema([
             Forms\Components\Select::make('project_id')
@@ -39,9 +41,9 @@ class TaskResource extends Resource
                     $set('assignee_id', null);
                     $set('assignee_ids', []);
                 })
-                ->disabled($is_member),
-            Forms\Components\TextInput::make('title')->label('Tiêu đề')->required()->maxLength(255)->disabled($is_member),
-            Forms\Components\Textarea::make('description')->label('Mô tả')->rows(4)->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
+            Forms\Components\TextInput::make('title')->label('Tiêu đề')->required()->maxLength(255)->disabled($is_member && ! $is_admin),
+            Forms\Components\Textarea::make('description')->label('Mô tả')->rows(4)->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('assignee_id')
                 ->label('Người thực hiện')
                 ->options(function (Get $get): array {
@@ -60,7 +62,7 @@ class TaskResource extends Resource
                     return $project->members()->pluck('users.name', 'users.id')->toArray();
                 })
                 ->searchable()
-                ->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('assignee_ids')
                 ->label('Thành viên tham gia')
                 ->multiple()
@@ -73,7 +75,7 @@ class TaskResource extends Resource
                     return $project?->members()->pluck('users.name', 'users.id')->toArray() ?? [];
                 })
                 ->searchable()
-                ->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('status')->label('Trạng thái')->options([
                 Task::STATUS_NEW => 'New',
                 Task::STATUS_PENDING => 'Pending',
@@ -92,8 +94,8 @@ class TaskResource extends Resource
                 Task::PRIORITY_LOW => 'Thấp',
                 Task::PRIORITY_MEDIUM => 'Trung bình',
                 Task::PRIORITY_HIGH => 'Cao',
-            ])->required()->default(Task::PRIORITY_MEDIUM)->disabled($is_member),
-            Forms\Components\DateTimePicker::make('deadline')->label('Hạn chót')->disabled($is_member),
+            ])->required()->default(Task::PRIORITY_MEDIUM)->disabled($is_member && ! $is_admin),
+            Forms\Components\DateTimePicker::make('deadline')->label('Hạn chót')->disabled($is_member && ! $is_admin),
         ]);
     }
 

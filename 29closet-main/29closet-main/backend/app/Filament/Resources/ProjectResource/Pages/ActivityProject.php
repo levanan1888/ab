@@ -12,8 +12,14 @@ class ActivityProject extends ProjectTabPage
     public function getActivities(): Collection
     {
         return ActivityLog::query()
-            ->where('subject_type', 'task')
-            ->whereIn('subject_id', $this->record->tasks()->pluck('id'))
+            ->where(function ($query): void {
+                $query->where('subject_type', 'project')
+                    ->where('subject_id', $this->record->id);
+            })
+            ->orWhere(function ($query): void {
+                $query->where('subject_type', 'task')
+                    ->whereIn('subject_id', $this->record->tasks()->pluck('id'));
+            })
             ->with('causer:id,name')
             ->latest()
             ->limit(100)

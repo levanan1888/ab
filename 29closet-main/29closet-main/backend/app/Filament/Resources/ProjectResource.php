@@ -25,12 +25,14 @@ class ProjectResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $is_member = Auth::user()?->role === User::ROLE_MEMBER;
+        $user = Auth::user();
+        $is_member = $user?->role === User::ROLE_MEMBER;
+        $is_admin = $user?->role === User::ROLE_ADMIN;
 
         return $form->schema([
-            Forms\Components\TextInput::make('name')->label('Tên nhóm')->required()->maxLength(255)->disabled($is_member),
-            Forms\Components\Textarea::make('description')->label('Mô tả')->rows(3)->disabled($is_member),
-            Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true)->disabled($is_member),
+            Forms\Components\TextInput::make('name')->label('Tên nhóm')->required()->maxLength(255)->disabled($is_member && ! $is_admin),
+            Forms\Components\Textarea::make('description')->label('Mô tả')->rows(3)->disabled($is_member && ! $is_admin),
+            Forms\Components\Toggle::make('is_active')->label('Đang hoạt động')->default(true)->disabled($is_member && ! $is_admin),
         ]);
     }
 
@@ -89,7 +91,7 @@ class ProjectResource extends Resource
             return false;
         }
 
-        if ($user->role === \App\Models\User::ROLE_LEADER) {
+        if (in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)) {
             return true;
         }
 

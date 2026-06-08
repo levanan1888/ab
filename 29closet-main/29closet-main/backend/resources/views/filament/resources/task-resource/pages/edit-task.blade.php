@@ -25,10 +25,14 @@
         .rm-main-panel { border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 16px; background: #ffffff; }
         .rm-panel { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 14px; background: #fff; }
         .rm-history-item { border-top: 1px solid #e6e6e6; padding: 10px 0; }
+        .rm-reply-block { margin-top: 10px; margin-left: 18px; border-left: 2px solid #e5e7eb; padding-left: 12px; }
         .rm-history-item:first-child { border-top: 0; padding-top: 0; }
         .rm-meta { color: #777; font-size: 12px; }
         .rm-label { color: #6b7280; font-size: 13px; margin-right: 8px; min-width: 120px; display: inline-block; }
         .rm-note-box { min-height: 100px; width: 100%; border: 1px solid #cfcfcf; border-radius: 3px; padding: 8px; font-size: 13px; }
+        .rm-reply-box { min-height: 72px; width: 100%; border: 1px solid #cfcfcf; border-radius: 3px; padding: 8px; font-size: 13px; }
+        .rm-reply-form { margin-top: 10px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; background: #f9fafb; }
+        .rm-reply-form-title { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 8px; }
         .rm-btn { background: #1683d8; color: #fff; border: 0; border-radius: 4px; padding: 8px 12px; font-size: 13px; font-weight: 600; }
         .rm-summary { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 14px 0 14px; }
         .rm-card { border: 0; border-radius: 0; padding: 0; }
@@ -83,47 +87,59 @@
         </div>
 
 	        <section class="rm-panel">
-	            @if ($active_tab === 'history')
+            @if ($active_tab === 'history')
                 @forelse ($this->getTaskHistories() as $item)
+                    @php
+                        $taskTitle = data_get($item->meta, 'task_title', $record->title);
+                        $actionLabel = match ($item->action) {
+                            'created' => 'đã tạo task',
+                            'updated' => 'đã cập nhật task',
+                            'commented' => 'đã bình luận vào task',
+                            'watch' => 'đã theo dõi task',
+                            'unwatch' => 'đã bỏ theo dõi task',
+                            'status_changed' => 'đã đổi trạng thái task',
+                            default => $item->action,
+                        };
+                    @endphp
                     <article class="rm-history-item">
-                        <div><strong>{{ $item->causer?->name ?? 'System' }}</strong> {{ $item->action }}</div>
+                        <div>
+                            <strong>{{ $item->causer?->name ?? 'System' }}</strong>
+                            {{ $actionLabel }}
+                            <span class="rm-meta">· {{ $taskTitle }}</span>
+                        </div>
                         <div class="rm-meta">{{ $item->created_at?->diffForHumans() }} ({{ $item->created_at?->format('d/m/Y H:i') }})</div>
                     </article>
 	                @empty
 	                    <div class="rm-meta">Chưa có lịch sử thay đổi.</div>
 	                @endforelse
             @elseif ($active_tab === 'notes')
-                <div style="margin-bottom: 10px;">
-                    @if($reply_to_comment_id)
-                        <div class="rm-meta" style="margin-bottom:6px;">Đang trả lời bình luận #{{ $reply_to_comment_id }}</div>
-                    @endif
-                    <textarea class="rm-note-box" wire:model.defer="note_content" placeholder="Nhập ghi chú..."></textarea>
+                @include('filament.resources.task-resource.pages.partials.comment-thread', [
+                    'comments' => $this->getTaskComments(),
+                    'reply_to_comment_id' => $reply_to_comment_id,
+                ])
+                <div style="margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 12px;">
+                    <div class="rm-meta" style="margin-bottom:6px;">Viết bình luận mới</div>
+                    <textarea class="rm-note-box" wire:model.defer="note_content" placeholder="Nhập bình luận..."></textarea>
+                    <div style="margin-top: 8px;">
+                        <button type="button" class="rm-btn" wire:click.prevent="submitComment">Thêm bình luận</button>
+                    </div>
                 </div>
-                <button type="button" class="rm-btn" wire:click="addNote">Thêm ghi chú</button>
-
-	                <div style="margin-top: 14px;">
-                    @forelse ($this->getTaskComments() as $comment)
-                        <article class="rm-history-item">
-                            <div><strong>{{ $comment->user?->name ?? 'N/A' }}</strong></div>
-                            <div>{{ $comment->content }}</div>
-                            <div class="rm-meta">{{ $comment->created_at?->diffForHumans() }}</div>
-                            <button type="button" class="rm-action-link" wire:click="setReplyTo({{ $comment->id }})">Trả lời</button>
-                            @foreach($comment->replies as $reply)
-                                <div style="margin-left:18px;border-left:2px solid #e5e7eb;padding-left:10px;margin-top:8px;">
-                                    <div><strong>{{ $reply->user?->name ?? 'N/A' }}</strong></div>
-                                    <div>{{ $reply->content }}</div>
-                                    <div class="rm-meta">{{ $reply->created_at?->diffForHumans() }}</div>
-                                </div>
-                            @endforeach
-                        </article>
-	                    @empty
-	                        <div class="rm-meta">Chưa có ghi chú.</div>
-	                    @endforelse
-	                </div>
             @else
                 @forelse ($this->getTaskHistories() as $item)
+                    @php
+                        $taskTitle = data_get($item->meta, 'task_title', $record->title);
+                        $actionLabel = match ($item->action) {
+                            'created' => 'đã tạo task',
+                            'updated' => 'đã cập nhật task',
+                            'commented' => 'đã bình luận vào task',
+                            'watch' => 'đã theo dõi task',
+                            'unwatch' => 'đã bỏ theo dõi task',
+                            'status_changed' => 'đã đổi trạng thái task',
+                            default => $item->action,
+                        };
+                    @endphp
                     <article class="rm-history-item">
-                        <div><strong>{{ $item->action }}</strong></div>
+                        <div><strong>{{ $actionLabel }}</strong> · {{ $taskTitle }}</div>
                         <div class="rm-meta">{{ json_encode($item->meta, JSON_UNESCAPED_UNICODE) ?: '{}' }}</div>
                     </article>
                 @empty

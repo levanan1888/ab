@@ -9,17 +9,17 @@ class TaskCommentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 
     public function view(User $user, TaskComment $task_comment): bool
     {
-        return $task_comment->task->project->isMember($user);
+        return $user->is_admin() || $task_comment->task->project->isMember($user);
     }
 
     public function create(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 
     public function update(User $user, TaskComment $task_comment): bool
@@ -34,6 +34,6 @@ class TaskCommentPolicy
 
     public function deleteAny(User $user): bool
     {
-        return $user->is_leader();
+        return $user->is_admin();
     }
 }

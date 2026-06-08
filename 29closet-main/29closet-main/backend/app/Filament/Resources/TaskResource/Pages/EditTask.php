@@ -20,8 +20,11 @@ class EditTask extends EditRecord
 
     public string $active_tab = 'history';
     public string $note_content = '';
+    public string $reply_content = '';
     public ?int $reply_to_comment_id = null;
     public bool $show_edit_form = false;
+    public array $expanded_reply_ids = [];
+    public bool $show_all_comments = false;
     protected array $assigneeIds = [];
 
     protected function mutateFormDataBeforeFill(array $data): array
@@ -78,7 +81,7 @@ class EditTask extends EditRecord
 
     public function addNote(): void
     {
-        $content = trim($this->note_content);
+        $content = trim($this->reply_to_comment_id !== null ? $this->reply_content : $this->note_content);
         if ($content === '') {
             Notification::make()->title('Nội dung bình luận không được để trống')->danger()->send();
             return;
@@ -99,18 +102,78 @@ class EditTask extends EditRecord
             'meta' => ['content' => $content, 'task_title' => $this->record->title, 'parent_id' => $this->reply_to_comment_id],
         ]);
 
-        $this->note_content = '';
         $this->reply_to_comment_id = null;
+        $this->note_content = '';
+        $this->reply_content = '';
+        $this->dispatch('$refresh');
+    }
+
+    public function submitReply(): void
+    {
+        if ($this->reply_to_comment_id === null) {
+            return;
+        }
+
+        $this->addNote();
+    }
+
+    public function submitComment(): void
+    {
+        $this->reply_to_comment_id = null;
+        $this->addNote();
     }
 
     public function setReplyTo(int $commentId): void
     {
         $this->reply_to_comment_id = $commentId;
+        $this->reply_content = '';
+    }
+
+    public function loadMoreReplies(int $commentId): void
+    {
+        if (! in_array($commentId, $this->expanded_reply_ids, true)) {
+            $this->expanded_reply_ids[] = $commentId;
+        }
+    }
+
+    public function loadMoreComments(): void
+    {
+        $this->show_all_comments = true;
+        $this->dispatch('$refresh');
+    }
+
+    public function isRepliesExpanded(int $commentId): bool
+    {
+        return in_array($commentId, $this->expanded_reply_ids, true);
     }
 
     public function getTaskComments(): Collection
     {
-        return $this->record->comments()->whereNull('parent_id')->with(['user:id,name', 'replies.user:id,name'])->latest()->get();
+        return $this->record->comments()
+            ->whereNull('parent_id')
+            ->with([
+                'user:id,name',
+                'replies' => function ($query): void {
+                    $query->with([
+                        'user:id,name',
+                        'replies' => function ($nestedQuery): void {
+                            $nestedQuery->with([
+                                'user:id,name',
+                                'replies' => function ($deepQuery): void {
+                                    $deepQuery->with([
+                                        'user:id,name',
+                                        'replies' => function ($deeperQuery): void {
+                                            $deeperQuery->with('user:id,name')->latest()->limit(5);
+                                        },
+                                    ])->latest()->limit(5);
+                                },
+                            ])->latest()->limit(5);
+                        },
+                    ])->latest()->limit(5);
+                },
+            ])
+            ->latest()
+            ->get();
     }
 
     public function getTaskHistories(): Collection

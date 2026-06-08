@@ -9,17 +9,17 @@ class TaskPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 
     public function view(User $user, Task $task): bool
     {
-        return $task->project->isMember($user);
+        return $user->is_admin() || $task->project->isMember($user);
     }
 
     public function create(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true);
     }
 
     public function update(User $user, Task $task): bool
@@ -39,6 +39,6 @@ class TaskPolicy
 
     public function deleteAny(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 }

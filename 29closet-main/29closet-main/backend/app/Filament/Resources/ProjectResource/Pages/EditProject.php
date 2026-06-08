@@ -113,8 +113,14 @@ class EditProject extends EditRecord
     public function getActivities(): Collection
     {
         return ActivityLog::query()
-            ->where('subject_type', 'task')
-            ->whereIn('subject_id', $this->record->tasks()->pluck('id'))
+            ->where(function ($query): void {
+                $query->where('subject_type', 'project')
+                    ->where('subject_id', $this->record->id);
+            })
+            ->orWhere(function ($query): void {
+                $query->where('subject_type', 'task')
+                    ->whereIn('subject_id', $this->record->tasks()->pluck('id'));
+            })
             ->with('causer:id,name')
             ->latest()
             ->limit(100)
@@ -136,7 +142,7 @@ class EditProject extends EditRecord
                 ->modalHeading('Giải tán nhóm')
                 ->modalDescription('Bạn có chắc chắn muốn giải tán nhóm này? Toàn bộ dữ liệu liên quan có thể bị xóa.')
                 ->modalSubmitActionLabel('Giải tán nhóm')
-                ->visible(fn (): bool => Auth::user()?->role === User::ROLE_LEADER),
+                ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)),
         ];
     }
 

@@ -20,7 +20,11 @@ class CreateProject extends CreateRecord
     protected function afterCreate(): void
     {
         $this->record->members()->syncWithoutDetaching([
-            Auth::id() => ['role_in_project' => 'leader'],
+            Auth::id() => [
+                'role_in_project' => Auth::user()?->role === \App\Models\User::ROLE_ADMIN
+                    ? \App\Models\User::ROLE_LEADER
+                    : \App\Models\User::ROLE_MEMBER,
+            ],
         ]);
     }
 }

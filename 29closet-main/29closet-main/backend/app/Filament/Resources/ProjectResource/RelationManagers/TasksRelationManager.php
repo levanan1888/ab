@@ -21,23 +21,25 @@ class TasksRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
-        $is_member = Auth::user()?->role === User::ROLE_MEMBER;
+        $user = Auth::user();
+        $is_member = $user?->role === User::ROLE_MEMBER;
+        $is_admin = $user?->role === User::ROLE_ADMIN;
 
         return $form->schema([
             Forms\Components\TextInput::make('title')
                 ->label('Tiêu đề')
                 ->required()
                 ->maxLength(255)
-                ->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
             Forms\Components\Textarea::make('description')
                 ->label('Mô tả')
                 ->rows(4)
-                ->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('assignee_id')
                 ->label('Người thực hiện')
                 ->options(fn (): array => $this->getAssignableUsers())
                 ->searchable()
-                ->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('status')
                 ->label('Trạng thái')
                 ->options([
@@ -65,7 +67,7 @@ class TasksRelationManager extends RelationManager
                 ])
                 ->required()
                 ->default(Task::PRIORITY_MEDIUM)
-                ->disabled($is_member),
+                ->disabled($is_member && ! $is_admin),
             Forms\Components\DateTimePicker::make('deadline')
                 ->label('Hạn chót')
                 ->disabled($is_member),
@@ -117,7 +119,7 @@ class TasksRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Tạo công việc')
-                    ->visible(fn (): bool => Auth::user()?->role === User::ROLE_LEADER)
+                    ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true))
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['creator_id'] = Auth::id();
                         $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
@@ -139,12 +141,12 @@ class TasksRelationManager extends RelationManager
                         $this->writeActivityLog($record, 'updated');
                     }),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (): bool => Auth::user()?->role === User::ROLE_LEADER),
+                    ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn (): bool => Auth::user()?->role === User::ROLE_LEADER),
+                        ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)),
                 ]),
             ]);
     }

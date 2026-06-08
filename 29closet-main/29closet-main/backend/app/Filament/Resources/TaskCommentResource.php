@@ -33,7 +33,7 @@ class TaskCommentResource extends Resource
                         return [];
                     }
 
-                    if ($user->role === User::ROLE_LEADER) {
+                    if (in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)) {
                         return Task::query()->pluck('title', 'id')->toArray();
                     }
 
@@ -93,7 +93,7 @@ class TaskCommentResource extends Resource
             return false;
         }
 
-        if ($user->role === \App\Models\User::ROLE_LEADER) {
+        if (in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)) {
             return true;
         }
 

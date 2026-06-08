@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Models\SiteSetting;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -16,6 +17,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Illuminate\Support\Facades\Storage;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -25,9 +27,18 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Auth\Login::class)
-            ->brandName(' ')
-            ->brandLogo(asset('img/avatThanh.png'))
+            ->brandName(config('app.name'))
+            ->brandLogo(function (): ?string {
+                $logoPath = SiteSetting::query()->value('logo_path');
+
+                return filled($logoPath) ? Storage::disk('public')->url($logoPath) : asset('img/avatThanh.png');
+            })
             ->brandLogoHeight('3rem')
+            ->favicon(function (): ?string {
+                $faviconPath = SiteSetting::query()->value('favicon_path');
+
+                return filled($faviconPath) ? Storage::disk('public')->url($faviconPath) : asset('favicon.ico');
+            })
             ->colors([
                 'primary' => Color::Blue,
             ])

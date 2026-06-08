@@ -9,17 +9,17 @@ class ProjectPolicy
 {
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 
     public function view(User $user, Project $project): bool
     {
-        return $project->isMember($user);
+        return $user->is_admin() || $project->isMember($user);
     }
 
     public function create(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true);
     }
 
     public function update(User $user, Project $project): bool
@@ -34,6 +34,6 @@ class ProjectPolicy
 
     public function deleteAny(User $user): bool
     {
-        return in_array($user->role, [User::ROLE_LEADER, User::ROLE_MEMBER], true);
+        return in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER, User::ROLE_MEMBER], true);
     }
 }

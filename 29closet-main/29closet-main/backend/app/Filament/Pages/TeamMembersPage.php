@@ -29,7 +29,7 @@ class TeamMembersPage extends Page
 
     public static function shouldRegisterNavigation(): bool
     {
-        return Auth::user()?->is_leader() === true;
+        return Auth::user()?->is_admin() === true;
     }
 
     public function getUsersWithTeams(): Collection

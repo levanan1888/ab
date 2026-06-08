@@ -47,6 +47,10 @@ class Project extends Model
 
     public function isProjectLeader(User $user): bool
     {
+        if ($user->is_admin()) {
+            return true;
+        }
+
         return $this->members()
             ->where('users.id', $user->id)
             ->wherePivot('role_in_project', User::ROLE_LEADER)

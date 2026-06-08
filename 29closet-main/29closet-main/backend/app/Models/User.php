@@ -15,6 +15,7 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    public const ROLE_ADMIN = 'admin';
     public const ROLE_LEADER = 'leader';
     public const ROLE_MEMBER = 'member';
 
@@ -37,7 +38,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return in_array($this->role, [self::ROLE_LEADER, self::ROLE_MEMBER], true);
+        return in_array($this->role, [self::ROLE_ADMIN, self::ROLE_LEADER, self::ROLE_MEMBER], true);
     }
 
     public function owned_projects(): HasMany
@@ -65,5 +66,10 @@ class User extends Authenticatable implements FilamentUser
     public function is_leader(): bool
     {
         return $this->role === self::ROLE_LEADER;
+    }
+
+    public function is_admin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
     }
 }

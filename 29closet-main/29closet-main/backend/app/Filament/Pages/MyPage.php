@@ -44,7 +44,7 @@ class MyPage extends Page
     {
         $user = Auth::user();
 
-        if ($user === null || $user->role !== User::ROLE_LEADER) {
+        if ($user === null || ! in_array($user->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)) {
             return collect();
         }
 
