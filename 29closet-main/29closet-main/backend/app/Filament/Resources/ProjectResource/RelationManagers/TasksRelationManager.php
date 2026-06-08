@@ -22,19 +22,18 @@ class TasksRelationManager extends RelationManager
     public function form(Form $form): Form
     {
         $user = Auth::user();
-        $is_member = $user?->role === User::ROLE_MEMBER;
-        $is_admin = $user?->role === User::ROLE_ADMIN;
+        $canManageTasks = $this->canManageTasks();
 
         return $form->schema([
             Forms\Components\TextInput::make('title')
                 ->label('Tiêu đề')
                 ->required()
                 ->maxLength(255)
-                ->disabled($is_member && ! $is_admin),
+                ->disabled(! $canManageTasks),
             Forms\Components\Textarea::make('description')
                 ->label('Mô tả')
                 ->rows(4)
-                ->disabled($is_member && ! $is_admin),
+                ->disabled(! $canManageTasks),
             Forms\Components\Select::make('assignee_ids')
                 ->label('Người thực hiện')
                 ->multiple()
@@ -43,7 +42,7 @@ class TasksRelationManager extends RelationManager
                 ->preload()
                 ->searchable()
                 ->required()
-                ->disabled($is_member && ! $is_admin),
+                ->disabled(! $canManageTasks),
             Forms\Components\Select::make('status')
                 ->label('Trạng thái')
                 ->options([
@@ -71,10 +70,10 @@ class TasksRelationManager extends RelationManager
                 ])
                 ->required()
                 ->default(Task::PRIORITY_MEDIUM)
-                ->disabled($is_member && ! $is_admin),
+                ->disabled(! $canManageTasks),
             Forms\Components\DateTimePicker::make('deadline')
                 ->label('Hạn chót')
-                ->disabled($is_member),
+                ->disabled(! $canManageTasks),
         ]);
     }
 
@@ -125,7 +124,8 @@ class TasksRelationManager extends RelationManager
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Tạo công việc')
-                    ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true))
+                    ->authorize(fn (): bool => $this->canManageTasks())
+                    ->visible(fn (): bool => $this->canManageTasks())
                     ->mutateFormDataUsing(function (array $data): array {
                         $assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
 
@@ -149,6 +149,7 @@ class TasksRelationManager extends RelationManager
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
+                    ->authorize(fn (Model $record): bool => $this->canManageTasks() || $record->project->isMember(Auth::user()))
                     ->fillForm(function (Model $record): array {
                         $assigneeIds = $record->assignees()
                             ->pluck('users.id')
@@ -188,14 +189,27 @@ class TasksRelationManager extends RelationManager
                         $this->writeActivityLog($record, 'updated');
                     }),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)),
+                    ->authorize(fn (): bool => $this->canManageTasks())
+                    ->visible(fn (): bool => $this->canManageTasks()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true)),
+                        ->authorize(fn (): bool => $this->canManageTasks())
+                        ->visible(fn (): bool => $this->canManageTasks()),
                 ]),
             ]);
+    }
+
+    private function canManageTasks(): bool
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->getOwnerRecord()->isProjectLeader($user);
     }
 
     private function getAssignableUsers(): array
