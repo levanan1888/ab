@@ -35,7 +35,9 @@ class UserProfilePage extends Page implements HasForms
         $this->form->fill([
             'name' => $this->userRecord->name,
             'email' => $this->userRecord->email,
-            'role' => $this->userRecord->role,
+            'role' => in_array($this->userRecord->role, [User::ROLE_ADMIN, User::ROLE_MEMBER], true)
+                ? $this->userRecord->role
+                : null,
         ]);
     }
 
@@ -55,9 +57,9 @@ class UserProfilePage extends Page implements HasForms
                     ->label('Vai trò hệ thống')
                     ->options([
                         User::ROLE_ADMIN => 'Admin',
-                        User::ROLE_LEADER => 'Leader',
                         User::ROLE_MEMBER => 'Member',
                     ])
+                    ->placeholder('Chọn vai trò')
                     ->required(),
             ]);
     }
@@ -65,6 +67,11 @@ class UserProfilePage extends Page implements HasForms
     public function save(): void
     {
         $state = $this->form->getState();
+
+        abort_unless(
+            in_array($state['role'] ?? null, [User::ROLE_ADMIN, User::ROLE_MEMBER], true),
+            422
+        );
 
         $this->userRecord->update([
             'name' => $state['name'],

@@ -29,7 +29,44 @@ class EditTask extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $data['assignee_ids'] = $this->record->assignees()->pluck('users.id')->toArray();
+        $assigneeIds = $this->record->assignees()
+            ->pluck('users.id')
+            ->map(fn ($id): string => (string) $id)
+            ->toArray();
+
+        if (empty($assigneeIds) && $this->record->assignee_id !== null) {
+            $assigneeIds = [(string) $this->record->assignee_id];
+        }
+
+        $data['assignee_ids'] = $assigneeIds;
+        $this->assigneeIds = $assigneeIds;
+
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $this->assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
+        $data['assignee_id'] = $this->assigneeIds[0] ?? null;
+
+        $user = Auth::user();
+
+        if ($user !== null && $user->role === User::ROLE_MEMBER) {
+            return [
+                'project_id' => $this->record->project_id,
+                'title' => $this->record->title,
+                'description' => $this->record->description,
+                'assignee_id' => $this->record->assignee_id,
+                'status' => $data['status'] ?? $this->record->status,
+                'priority' => $this->record->priority,
+                'deadline' => $this->record->deadline,
+                'creator_id' => $this->record->creator_id,
+                'completed_at' => ($data['status'] ?? $this->record->status) === Task::STATUS_DONE ? now() : null,
+            ];
+        }
+
+        $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_DONE ? now() : null;
+
         return $data;
     }
 
@@ -184,31 +221,6 @@ class EditTask extends EditRecord
             ->with('causer:id,name')
             ->latest()
             ->get();
-    }
-
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        $this->assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
-
-        $user = Auth::user();
-
-        if ($user !== null && $user->role === User::ROLE_MEMBER) {
-            return [
-                'project_id' => $this->record->project_id,
-                'title' => $this->record->title,
-                'description' => $this->record->description,
-                'assignee_id' => $this->record->assignee_id,
-                'status' => $data['status'] ?? $this->record->status,
-                'priority' => $this->record->priority,
-                'deadline' => $this->record->deadline,
-                'creator_id' => $this->record->creator_id,
-                'completed_at' => ($data['status'] ?? $this->record->status) === Task::STATUS_DONE ? now() : null,
-            ];
-        }
-
-        $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_DONE ? now() : null;
-
-        return $data;
     }
 
     protected function afterSave(): void

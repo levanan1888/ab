@@ -65,7 +65,10 @@
             <div class="rm-summary">
                 <section class="rm-card">
                     <div><span class="rm-label">Nhóm:</span>{{ $record->project?->name ?? 'N/A' }}</div>
-                    <div><span class="rm-label">Người thực hiện:</span>{{ $record->assignee?->name ?? 'Chưa gán' }}</div>
+                    <div>
+                        <span class="rm-label">Người thực hiện:</span>
+                        {{ $record->assignees->pluck('name')->join(', ') ?: ($record->assignee?->name ?? 'Chưa gán') }}
+                    </div>
                 </section>
                 <section class="rm-card">
                     <div><span class="rm-label">Trạng thái:</span>{{ $record->status }}</div>

@@ -11,11 +11,15 @@ use Illuminate\Support\Facades\Auth;
 class CreateTask extends CreateRecord
 {
     protected static string $resource = TaskResource::class;
+
     protected array $assigneeIds = [];
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data['creator_id'] = Auth::id();
+
+        $this->assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
+        $data['assignee_id'] = $this->assigneeIds[0] ?? null;
 
         if (($data['status'] ?? null) === 'done') {
             $data['completed_at'] = now();
@@ -26,11 +30,12 @@ class CreateTask extends CreateRecord
 
     protected function beforeCreate(): void
     {
-        $state = $this->form->getState();
-        $this->assigneeIds = array_values(array_unique(array_filter((array) ($state['assignee_ids'] ?? []))));
+        if (count($this->assigneeIds) === 0) {
+            Notification::make()
+                ->title('Cần chọn ít nhất một người thực hiện')
+                ->danger()
+                ->send();
 
-        if (count($this->assigneeIds) === 0 && empty($state['assignee_id'])) {
-            Notification::make()->title('Cần chọn ít nhất một người thực hiện')->danger()->send();
             $this->halt();
         }
     }

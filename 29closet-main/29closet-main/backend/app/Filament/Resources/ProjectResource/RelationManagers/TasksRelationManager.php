@@ -35,10 +35,14 @@ class TasksRelationManager extends RelationManager
                 ->label('Mô tả')
                 ->rows(4)
                 ->disabled($is_member && ! $is_admin),
-            Forms\Components\Select::make('assignee_id')
+            Forms\Components\Select::make('assignee_ids')
                 ->label('Người thực hiện')
+                ->multiple()
+                ->native(false)
                 ->options(fn (): array => $this->getAssignableUsers())
+                ->preload()
                 ->searchable()
+                ->required()
                 ->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('status')
                 ->label('Trạng thái')
@@ -80,7 +84,9 @@ class TasksRelationManager extends RelationManager
             ->recordTitleAttribute('title')
             ->columns([
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('assignee.name')->label('Người thực hiện'),
+                Tables\Columns\TextColumn::make('assignees.name')
+                    ->label('Người thực hiện')
+                    ->badge(),
                 Tables\Columns\BadgeColumn::make('status')->label('Trạng thái')->colors([
                     'gray' => Task::STATUS_NEW,
                     'secondary' => Task::STATUS_PENDING,
@@ -121,23 +127,64 @@ class TasksRelationManager extends RelationManager
                     ->label('Tạo công việc')
                     ->visible(fn (): bool => in_array(Auth::user()?->role, [User::ROLE_ADMIN, User::ROLE_LEADER], true))
                     ->mutateFormDataUsing(function (array $data): array {
+                        $assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
+
                         $data['creator_id'] = Auth::id();
+                        $data['assignee_id'] = $assigneeIds[0] ?? null;
                         $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
 
                         return $data;
                     })
                     ->after(function (Model $record): void {
+                        $assigneeIds = array_values(array_unique(array_filter((array) request()->input('assignee_ids', []))));
+
+                        if (count($assigneeIds) > 0) {
+                            $record->assignees()->sync($assigneeIds);
+                        } elseif ($record->assignee_id !== null) {
+                            $record->assignees()->sync([$record->assignee_id]);
+                        }
+
                         $this->writeActivityLog($record, 'created');
                     }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
+                    ->fillForm(function (Model $record): array {
+                        $assigneeIds = $record->assignees()
+                            ->pluck('users.id')
+                            ->map(fn ($id): string => (string) $id)
+                            ->toArray();
+
+                        if (empty($assigneeIds) && $record->assignee_id !== null) {
+                            $assigneeIds = [(string) $record->assignee_id];
+                        }
+
+                        return [
+                            'title' => $record->title,
+                            'description' => $record->description,
+                            'assignee_ids' => $assigneeIds,
+                            'status' => $record->status,
+                            'priority' => $record->priority,
+                            'deadline' => $record->deadline,
+                        ];
+                    })
                     ->mutateFormDataUsing(function (array $data): array {
+                        $assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
+
+                        $data['assignee_id'] = $assigneeIds[0] ?? null;
                         $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
 
                         return $data;
                     })
                     ->after(function (Model $record): void {
+                        $assigneeIds = array_values(array_unique(array_filter((array) request()->input('assignee_ids', []))));
+
+                        if (count($assigneeIds) > 0) {
+                            $record->assignees()->sync($assigneeIds);
+                        } elseif ($record->assignee_id !== null) {
+                            $record->assignees()->sync([$record->assignee_id]);
+                        }
+
                         $this->writeActivityLog($record, 'updated');
                     }),
                 Tables\Actions\DeleteAction::make()
@@ -153,7 +200,11 @@ class TasksRelationManager extends RelationManager
 
     private function getAssignableUsers(): array
     {
-        return $this->getOwnerRecord()->members()->pluck('users.name', 'users.id')->toArray();
+        return $this->getOwnerRecord()
+            ->members()
+            ->pluck('users.name', 'users.id')
+            ->mapWithKeys(fn ($name, $id): array => [(string) $id => $name])
+            ->toArray();
     }
 
     private function writeActivityLog(Model $record, string $action): void

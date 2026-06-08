@@ -44,8 +44,10 @@ class TaskResource extends Resource
                 ->disabled($is_member && ! $is_admin),
             Forms\Components\TextInput::make('title')->label('Tiêu đề')->required()->maxLength(255)->disabled($is_member && ! $is_admin),
             Forms\Components\Textarea::make('description')->label('Mô tả')->rows(4)->disabled($is_member && ! $is_admin),
-            Forms\Components\Select::make('assignee_id')
+            Forms\Components\Select::make('assignee_ids')
                 ->label('Người thực hiện')
+                ->multiple()
+                ->native(false)
                 ->options(function (Get $get): array {
                     $project_id = $get('project_id');
 
@@ -59,22 +61,14 @@ class TaskResource extends Resource
                         return [];
                     }
 
-                    return $project->members()->pluck('users.name', 'users.id')->toArray();
+                    return $project->members()
+                        ->pluck('users.name', 'users.id')
+                        ->mapWithKeys(fn ($name, $id): array => [(string) $id => $name])
+                        ->toArray();
                 })
+                ->preload()
                 ->searchable()
-                ->disabled($is_member && ! $is_admin),
-            Forms\Components\Select::make('assignee_ids')
-                ->label('Thành viên tham gia')
-                ->multiple()
-                ->options(function (Get $get): array {
-                    $project_id = $get('project_id');
-                    if (empty($project_id)) {
-                        return [];
-                    }
-                    $project = Project::query()->find($project_id);
-                    return $project?->members()->pluck('users.name', 'users.id')->toArray() ?? [];
-                })
-                ->searchable()
+                ->required()
                 ->disabled($is_member && ! $is_admin),
             Forms\Components\Select::make('status')->label('Trạng thái')->options([
                 Task::STATUS_NEW => 'New',
@@ -105,8 +99,9 @@ class TaskResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('project.name')->label('Nhóm làm việc')->sortable(),
-                Tables\Columns\TextColumn::make('assignee.name')->label('Người thực hiện chính'),
-                Tables\Columns\TextColumn::make('assignees.name')->label('Thành viên tham gia')->badge(),
+                Tables\Columns\TextColumn::make('assignees.name')
+                    ->label('Người thực hiện')
+                    ->badge(),
                 Tables\Columns\BadgeColumn::make('status')->label('Trạng thái')->colors([
                     'gray' => Task::STATUS_NEW,
                     'secondary' => Task::STATUS_PENDING,
