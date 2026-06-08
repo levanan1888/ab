@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Task;
 use App\Models\User;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -148,7 +149,16 @@ class EditProject extends EditRecord
 
     protected function authorizeAccess(): void
     {
-        abort_unless(static::getResource()::canView($this->getRecord()), 403);
+        if (static::getResource()::canView($this->getRecord())) {
+            return;
+        }
+
+        Notification::make()
+            ->title('Bạn không có quyền truy cập dự án này')
+            ->danger()
+            ->send();
+
+        $this->redirect(static::getResource()::getUrl('index'));
     }
 
     protected function getFormActions(): array

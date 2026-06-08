@@ -6,6 +6,7 @@ use App\Filament\Pages\TaskKanbanBoard;
 use App\Filament\Resources\ProjectResource;
 use App\Filament\Resources\TaskResource;
 use App\Models\Project;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Page;
 
 abstract class ProjectTabPage extends Page
@@ -17,7 +18,17 @@ abstract class ProjectTabPage extends Page
     public function mount($record): void
     {
         $this->record = Project::query()->findOrFail($record);
-        abort_unless(static::getResource()::canView($this->record), 403);
+
+        if (static::getResource()::canView($this->record)) {
+            return;
+        }
+
+        Notification::make()
+            ->title('Bạn không có quyền truy cập dự án này')
+            ->danger()
+            ->send();
+
+        $this->redirect(static::getResource()::getUrl('index'));
     }
 
     public function getProjectTabUrls(): array

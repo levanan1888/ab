@@ -8,6 +8,7 @@ use App\Models\Task;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 
 class ListProjects extends ListRecords
@@ -61,6 +62,14 @@ class ListProjects extends ListRecords
                     ->limit(4);
             }])
             ->orderBy('name');
+
+        $user = Auth::user();
+
+        if ($user !== null && ! $user->is_admin()) {
+            $query->whereHas('members', function ($builder) use ($user): void {
+                $builder->where('users.id', $user->id);
+            });
+        }
 
         if ($this->project_status === 'active') {
             $query->where('is_active', true);
