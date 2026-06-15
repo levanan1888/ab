@@ -19,6 +19,8 @@ class TasksRelationManager extends RelationManager
 
     protected static ?string $title = 'Công việc';
 
+    protected array $assigneeIds = [];
+
     public function form(Form $form): Form
     {
         $user = Auth::user();
@@ -127,19 +129,17 @@ class TasksRelationManager extends RelationManager
                     ->authorize(fn (): bool => $this->canManageTasks())
                     ->visible(fn (): bool => $this->canManageTasks())
                     ->mutateFormDataUsing(function (array $data): array {
-                        $assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
+                        $this->assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
 
                         $data['creator_id'] = Auth::id();
-                        $data['assignee_id'] = $assigneeIds[0] ?? null;
+                        $data['assignee_id'] = $this->assigneeIds[0] ?? null;
                         $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
 
                         return $data;
                     })
                     ->after(function (Model $record): void {
-                        $assigneeIds = array_values(array_unique(array_filter((array) request()->input('assignee_ids', []))));
-
-                        if (count($assigneeIds) > 0) {
-                            $record->assignees()->sync($assigneeIds);
+                        if (count($this->assigneeIds) > 0) {
+                            $record->assignees()->sync($this->assigneeIds);
                         } elseif ($record->assignee_id !== null) {
                             $record->assignees()->sync([$record->assignee_id]);
                         }
@@ -170,18 +170,16 @@ class TasksRelationManager extends RelationManager
                         ];
                     })
                     ->mutateFormDataUsing(function (array $data): array {
-                        $assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
+                        $this->assigneeIds = array_values(array_unique(array_filter((array) ($data['assignee_ids'] ?? []))));
 
-                        $data['assignee_id'] = $assigneeIds[0] ?? null;
+                        $data['assignee_id'] = $this->assigneeIds[0] ?? null;
                         $data['completed_at'] = ($data['status'] ?? null) === Task::STATUS_CLOSED ? now() : null;
 
                         return $data;
                     })
                     ->after(function (Model $record): void {
-                        $assigneeIds = array_values(array_unique(array_filter((array) request()->input('assignee_ids', []))));
-
-                        if (count($assigneeIds) > 0) {
-                            $record->assignees()->sync($assigneeIds);
+                        if (count($this->assigneeIds) > 0) {
+                            $record->assignees()->sync($this->assigneeIds);
                         } elseif ($record->assignee_id !== null) {
                             $record->assignees()->sync([$record->assignee_id]);
                         }

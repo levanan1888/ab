@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ListRecords;
 class ListTasks extends ListRecords
 {
     protected static string $resource = TaskResource::class;
+    protected static string $view = 'filament.resources.task-resource.pages.list-tasks';
 
     protected function getHeaderActions(): array
     {

@@ -96,6 +96,9 @@ class TaskResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordClasses(function (Task $record): string {
+                return $record->priority === Task::PRIORITY_HIGH ? 'task-row-high-priority' : '';
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('title')->label('Tiêu đề')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('project.name')->label('Nhóm làm việc')->sortable(),
