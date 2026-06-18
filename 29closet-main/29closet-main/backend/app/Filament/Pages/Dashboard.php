@@ -13,6 +13,22 @@ class Dashboard extends BaseDashboard
 {
     protected static string $view = 'filament.pages.dashboard';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user()?->role !== User::ROLE_MEMBER;
+    }
+
+    public function mount(): void
+    {
+        $user = Auth::user();
+
+        if ($user?->role === User::ROLE_MEMBER) {
+            $this->redirect(MyPage::getUrl());
+
+            return;
+        }
+    }
+
     public function getChartData(): array
     {
         $user = Auth::user();
